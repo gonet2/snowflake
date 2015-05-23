@@ -145,7 +145,7 @@ func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowfl
 	var uuid uint64
 	uuid |= (uint64(t) & 0x1FFFFFFFFFF) << 22
 	uuid |= s.machine_id
-	uuid |= s.sn & 0xFFF
+	uuid |= s.sn
 
 	return &pb.Snowflake_UUID{uuid}, nil
 }
