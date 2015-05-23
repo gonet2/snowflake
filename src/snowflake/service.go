@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -28,7 +27,9 @@ type server struct {
 	machines    []string
 	sn          uint64 // 12-bit serial no
 	machine_id  uint64 // 10-bit machine id
+	last_ts     int64  // last timestamp
 	client_pool sync.Pool
+	sync.Mutex
 }
 
 func (s *server) init() {
@@ -116,16 +117,49 @@ func (s *server) init_machine_id() {
 }
 
 func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowflake_UUID, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	// get a correct serial number
+	t := s.ts()
+	if t < s.last_ts { // clock shift backward
+		log.Error(SERVICE, "clock shift happened, waiting until the clock moving to the next millisecond.")
+		t = s.wait_ms(s.last_ts)
+	}
+
+	if s.last_ts == t { // same millisecond
+		s.sn = (s.sn + 1) & 0xFFF
+		if s.sn == 0 { // serial number overflows, wait until next ms
+			t = s.wait_ms(s.last_ts)
+		}
+	} else { // new millsecond, reset serial number to 0
+		s.sn = 0
+	}
+	// remember last timestamp
+	s.last_ts = t
+
 	// generate uuid, format:
 	//
 	// 0		0.................0		0......0			0........0
 	// 1-bit	41bit timestamp			10bit machine-id	12bit sn
 	var uuid uint64
-	time := uint64((time.Now().UnixNano() / 1000000) & 0x1FFFFFFFFFF)
-	sn := atomic.AddUint64(&s.sn, 1)
-	uuid |= time << 22
+	uuid |= (uint64(t) & 0x1FFFFFFFFFF) << 22
 	uuid |= s.machine_id
-	uuid |= sn & 0xFFF
+	uuid |= s.sn & 0xFFF
 
 	return &pb.Snowflake_UUID{uuid}, nil
+}
+
+// wait_ms will spin wait till next millisecond.
+func (s *server) wait_ms(last_ts int64) int64 {
+	t := s.ts()
+	for t <= s.last_ts {
+		t = s.ts()
+	}
+	return t
+}
+
+// get timestamp
+func (s *server) ts() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
 }
