@@ -1,6 +1,6 @@
 # snowflake
-1. distributed 64bit-UUID generator
-2. sequence generator
+1. distributed 64bit-UUID generator based on twitter snowflake
+2. sequence generator, for generating sequential numbers, like auto-increment id.
 
 # install
 > snowflake-uuid must be created first        
