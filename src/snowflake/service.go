@@ -51,41 +51,6 @@ func (s *server) init() {
 	s.init_machine_id()
 }
 
-func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_Value, error) {
-	client := s.client_pool.Get().(*etcd.Client)
-	defer func() {
-		s.client_pool.Put(client)
-	}()
-	key := PATH + in.Name
-
-	for i := 0; i < RETRY_MAX; i++ {
-		// get the key
-		resp, err := client.Get(key, false, false)
-		if err != nil {
-			log.Critical(SERVICE, err)
-			return nil, errors.New("Key not exists, need to create first")
-		}
-
-		// get prevValue & prevIndex
-		prevValue, err := strconv.Atoi(resp.Node.Value)
-		if err != nil {
-			log.Critical(SERVICE, err)
-			return nil, errors.New("marlformed value")
-		}
-		prevIndex := resp.Node.ModifiedIndex
-
-		// CAS
-		resp, err = client.CompareAndSwap(key, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
-		if err != nil {
-			log.Error(SERVICE, err)
-			<-time.After(RETRY_DELAY)
-			continue
-		}
-		return &pb.Snowflake_Value{int64(prevValue + 1)}, nil
-	}
-	return nil, errors.New("etcd server busy")
-}
-
 func (s *server) init_machine_id() {
 	client := s.client_pool.Get().(*etcd.Client)
 	defer func() {
@@ -122,6 +87,43 @@ func (s *server) init_machine_id() {
 	}
 }
 
+// get next value of a key, like auto-increment in mysql
+func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_Value, error) {
+	client := s.client_pool.Get().(*etcd.Client)
+	defer func() {
+		s.client_pool.Put(client)
+	}()
+	key := PATH + in.Name
+
+	for i := 0; i < RETRY_MAX; i++ {
+		// get the key
+		resp, err := client.Get(key, false, false)
+		if err != nil {
+			log.Critical(SERVICE, err)
+			return nil, errors.New("Key not exists, need to create first")
+		}
+
+		// get prevValue & prevIndex
+		prevValue, err := strconv.Atoi(resp.Node.Value)
+		if err != nil {
+			log.Critical(SERVICE, err)
+			return nil, errors.New("marlformed value")
+		}
+		prevIndex := resp.Node.ModifiedIndex
+
+		// CAS
+		resp, err = client.CompareAndSwap(key, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
+		if err != nil {
+			log.Error(SERVICE, err)
+			<-time.After(RETRY_DELAY)
+			continue
+		}
+		return &pb.Snowflake_Value{int64(prevValue + 1)}, nil
+	}
+	return nil, errors.New("etcd server busy")
+}
+
+// generate an unique uuid
 func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowflake_UUID, error) {
 	s.Lock()
 	defer s.Unlock()
