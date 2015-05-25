@@ -5,4 +5,17 @@
 # install
 snowflake-uuid must be created first        
 eg:      
-curl http://172.17.42.1:2379/v2/keys/seqs/snowflake-uuid -XPUT -d value="0"       
+curl http://172.17.42.1:2379/v2/keys/seqs/snowflake-uuid -XPUT -d value="0"  
+
+> key of Next() must be created first in /seqs/<key_name>
+
+install gpm, gvp first        
+$go get -u https://github.com/GameGophers/snowflake/        
+$cd snowflake     
+$source gvp        
+$gpm       
+$go install snowflake         
+$./startup.sh
+
+#install with docker
+docker build -t snowflake .     
