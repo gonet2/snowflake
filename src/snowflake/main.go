@@ -5,7 +5,7 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"os"
-	pb "snowflake/proto"
+	pb "proto"
 )
 
 const (

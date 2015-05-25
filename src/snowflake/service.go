@@ -7,7 +7,7 @@ import (
 	"github.com/coreos/go-etcd/etcd"
 	"golang.org/x/net/context"
 	"os"
-	pb "snowflake/proto"
+	pb "proto"
 	"strconv"
 	"strings"
 	"sync"
