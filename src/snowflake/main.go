@@ -4,6 +4,7 @@ import (
 	log "github.com/GameGophers/nsq-logger"
 	"google.golang.org/grpc"
 	"net"
+	"os"
 	pb "snowflake/proto"
 )
 
@@ -16,6 +17,7 @@ func main() {
 	lis, err := net.Listen("tcp", _port)
 	if err != nil {
 		log.Critical(SERVICE, err)
+		os.Exit(-1)
 	}
 	log.Info(SERVICE, "listening on ", lis.Addr())
 
