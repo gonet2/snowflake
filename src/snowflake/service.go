@@ -23,6 +23,12 @@ const (
 	RETRY_DELAY  = 10 * time.Millisecond
 )
 
+const (
+	TS_MASK         = 0x1FFFFFFFFFF // 41bit
+	SN_MASK         = 0xFFF         // 12bit
+	MACHINE_ID_MASK = 0x3FF         // 10bit
+)
+
 type server struct {
 	machines    []string
 	sn          uint64 // 12-bit serial no
@@ -111,7 +117,7 @@ func (s *server) init_machine_id() {
 		}
 
 		// record serial number of this service, already shifted
-		s.machine_id = (uint64(prevValue+1) & 0x3FF) << 12
+		s.machine_id = (uint64(prevValue+1) & MACHINE_ID_MASK) << 12
 		return
 	}
 }
@@ -128,7 +134,7 @@ func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowfl
 	}
 
 	if s.last_ts == t { // same millisecond
-		s.sn = (s.sn + 1) & 0xFFF
+		s.sn = (s.sn + 1) & SN_MASK
 		if s.sn == 0 { // serial number overflows, wait until next ms
 			t = s.wait_ms(s.last_ts)
 		}
@@ -140,10 +146,10 @@ func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowfl
 
 	// generate uuid, format:
 	//
-	// 0		0.................0		0......0			0........0
+	// 0		0.................0		0..............0	0........0
 	// 1-bit	41bit timestamp			10bit machine-id	12bit sn
 	var uuid uint64
-	uuid |= (uint64(t) & 0x1FFFFFFFFFF) << 22
+	uuid |= (uint64(t) & TS_MASK) << 22
 	uuid |= s.machine_id
 	uuid |= s.sn
 
