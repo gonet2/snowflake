@@ -61,14 +61,14 @@ func (s *server) init_machine_id() {
 		// get the key
 		resp, err := client.Get(UUID_KEY, false, false)
 		if err != nil {
-			log.Critical(SERVICE, err)
+			log.Critical(err)
 			os.Exit(-1)
 		}
 
 		// get prevValue & prevIndex
 		prevValue, err := strconv.Atoi(resp.Node.Value)
 		if err != nil {
-			log.Critical(SERVICE, err)
+			log.Critical(err)
 			os.Exit(-1)
 		}
 		prevIndex := resp.Node.ModifiedIndex
@@ -76,7 +76,7 @@ func (s *server) init_machine_id() {
 		// CAS
 		resp, err = client.CompareAndSwap(UUID_KEY, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
 		if err != nil {
-			log.Error(SERVICE, err)
+			log.Error(err)
 			<-time.After(RETRY_DELAY)
 			continue
 		}
@@ -99,14 +99,14 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 		// get the key
 		resp, err := client.Get(key, false, false)
 		if err != nil {
-			log.Critical(SERVICE, err)
+			log.Critical(err)
 			return nil, errors.New("Key not exists, need to create first")
 		}
 
 		// get prevValue & prevIndex
 		prevValue, err := strconv.Atoi(resp.Node.Value)
 		if err != nil {
-			log.Critical(SERVICE, err)
+			log.Critical(err)
 			return nil, errors.New("marlformed value")
 		}
 		prevIndex := resp.Node.ModifiedIndex
@@ -114,7 +114,7 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 		// CAS
 		resp, err = client.CompareAndSwap(key, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
 		if err != nil {
-			log.Error(SERVICE, err)
+			log.Error(err)
 			<-time.After(RETRY_DELAY)
 			continue
 		}
@@ -131,7 +131,7 @@ func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowfl
 	// get a correct serial number
 	t := s.ts()
 	if t < s.last_ts { // clock shift backward
-		log.Error(SERVICE, "clock shift happened, waiting until the clock moving to the next millisecond.")
+		log.Error("clock shift happened, waiting until the clock moving to the next millisecond.")
 		t = s.wait_ms(s.last_ts)
 	}
 
