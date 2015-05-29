@@ -1,5 +1,5 @@
 github.com/bradfitz/http2 f8202bc903bda493ebba4aa54922d78430c2c42f
-github.com/GameGophers/nsq-logger 11d1726beda1736f3c2294bee66cd2b292e61799
+github.com/GameGophers/nsq-logger dfcc05ce638eee75cacf3da0216c89a5bcc9f6a3
 github.com/golang/glog 44145f04b68cf362d9c4df2182967c2275eaefed
 golang.org/x/oauth2 f98d0160877ab4712b906626425ed8b0b320907c
 google.golang.org/grpc f5ebd86be717593ab029545492c93ddf8914832b
