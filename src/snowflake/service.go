@@ -16,7 +16,7 @@ import (
 
 const (
 	SERVICE      = "[SNOWFLAKE]"
-	DEFAULT_ETCD = "127.0.0.1:2379"
+	DEFAULT_ETCD = "http://127.0.0.1:2379"
 	PATH         = "/seqs/"
 	UUID_KEY     = "/seqs/snowflake-uuid"
 	RETRY_MAX    = 10
