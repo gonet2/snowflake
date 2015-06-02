@@ -16,7 +16,7 @@ func TestSnowflake(t *testing.T) {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address)
 	if err != nil {
-		t.Fatal("did not connect: %v", err)
+		t.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 	c := pb.NewSnowflakeServiceClient(conn)
@@ -33,7 +33,7 @@ func BenchmarkSnowflake(b *testing.B) {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address)
 	if err != nil {
-		b.Fatal("did not connect: %v", err)
+		b.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 	c := pb.NewSnowflakeServiceClient(conn)
@@ -51,7 +51,7 @@ func TestSnowflakeUUID(t *testing.T) {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address)
 	if err != nil {
-		t.Fatal("did not connect: %v", err)
+		t.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 	c := pb.NewSnowflakeServiceClient(conn)
@@ -68,7 +68,7 @@ func BenchmarkSnowflakeUUID(b *testing.B) {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address)
 	if err != nil {
-		b.Fatal("did not connect: %v", err)
+		b.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 	c := pb.NewSnowflakeServiceClient(conn)
