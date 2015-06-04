@@ -164,7 +164,7 @@ func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowfl
 // wait_ms will spin wait till next millisecond.
 func (s *server) wait_ms(last_ts int64) int64 {
 	t := s.ts()
-	for t <= s.last_ts {
+	for t <= last_ts {
 		t = s.ts()
 	}
 	return t
