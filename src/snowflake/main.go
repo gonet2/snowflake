@@ -2,6 +2,7 @@ package main
 
 import (
 	log "github.com/GameGophers/nsq-logger"
+	_ "github.com/GameGophers/statsd-pprof"
 	"google.golang.org/grpc"
 	"net"
 	"os"
