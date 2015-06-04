@@ -1,4 +1,6 @@
 # snowflake
+[![Build Status](https://travis-ci.org/GameGophers/snowflake.svg?branch=master)](https://travis-ci.org/GameGophers/snowflake)
+
 1. distributed 64bit-UUID generator based on twitter snowflake
 2. sequence generator, for generating sequential numbers, like auto-increment id.
 
