@@ -85,6 +85,9 @@ func (s *server) init_machine_id() {
 		s.machine_id = (uint64(prevValue+1) & MACHINE_ID_MASK) << 12
 		return
 	}
+
+	// failed to get machine id, exit
+	os.Exit(-1)
 }
 
 // get next value of a key, like auto-increment in mysql
