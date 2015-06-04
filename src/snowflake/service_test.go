@@ -3,12 +3,12 @@ package main
 import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pb "snowflake/proto"
+	pb "proto"
 	"testing"
 )
 
 const (
-	address  = "localhost:50005"
+	address  = "localhost:50003"
 	test_key = "test_key"
 )
 
