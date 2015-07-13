@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	log "github.com/GameGophers/libs/nsq-logger"
 	"github.com/coreos/go-etcd/etcd"
+	log "github.com/gonet2/libs/nsq-logger"
 	"golang.org/x/net/context"
 	"os"
 	pb "proto"

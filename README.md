@@ -1,5 +1,5 @@
 # snowflake
-[![Build Status](https://travis-ci.org/GameGophers/snowflake.svg?branch=master)](https://travis-ci.org/GameGophers/snowflake)
+[![Build Status](https://travis-ci.org/gonet2/snowflake.svg?branch=master)](https://travis-ci.org/gonet2/snowflake)
 
 # 设计理念
 1. 分布式uuid发生器，twitter snowflake的go语言版本      
