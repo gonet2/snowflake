@@ -17,13 +17,17 @@ uuid格式为:
 其中10bit的machine-id，通过etcd做唯一性，使得每个snowflake实例可以做到0配置        
 
 # 安装 
-默认情况下uuid发生器依赖的snowflake-uuid键值对必须预先在etcd中创建，snowflake启动的时候会读取，例如：             
-curl http://172.17.42.1:2379/v2/keys/seqs/snowflake-uuid -XPUT -d value="0"          
+默认情况下uuid发生器依赖的snowflake-uuid键值对必须预先在etcd中创建，snowflake启动的时候会读取，例如： 
 
-如果完全由用户自定义machine_id,可以通过环境变量指定
+       curl http://172.17.42.1:2379/v2/keys/seqs/snowflake-uuid -XPUT -d value="0"          
+
+如果完全由用户自定义machine_id,可以通过环境变量指定，如:
+
+       export MACHINE_ID=123
 
 如果要使用序列发生器Next()，必须预先创建一个key，例如:       
-curl http://172.17.42.1:2379/v2/keys/seqs/userid -XPUT -d value="0"          
+
+       curl http://172.17.42.1:2379/v2/keys/seqs/userid -XPUT -d value="0"          
  
 其他部分参考Dockerfile         
 
@@ -33,3 +37,4 @@ curl http://172.17.42.1:2379/v2/keys/seqs/userid -XPUT -d value="0"
 # 环境变量
 > NSQD_HOST: eg : http://172.17.42.1:4151          
 > ETCD_HOST: eg: http://172.17.42.1:2379       
+> MACHINE_ID: eg: 123
