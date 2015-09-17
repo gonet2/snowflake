@@ -15,12 +15,13 @@ import (
 )
 
 const (
-	SERVICE      = "[SNOWFLAKE]"
-	DEFAULT_ETCD = "http://127.0.0.1:2379"
-	PATH         = "/seqs/"
-	UUID_KEY     = "/seqs/snowflake-uuid"
-	RETRY_MAX    = 10
-	RETRY_DELAY  = 10 * time.Millisecond
+	SERVICE        = "[SNOWFLAKE]"
+	DEFAULT_ETCD   = "http://127.0.0.1:2379"
+	ENV_MACHINE_ID = "MACHINE_ID" // specific machine id
+	PATH           = "/seqs/"
+	UUID_KEY       = "/seqs/snowflake-uuid"
+	RETRY_MAX      = 10
+	RETRY_DELAY    = 10 * time.Millisecond
 )
 
 const (
@@ -48,7 +49,19 @@ func (s *server) init() {
 	s.client_pool.New = func() interface{} {
 		return etcd.NewClient(s.machines)
 	}
-	s.init_machine_id()
+
+	// check if user specified machine id is set
+	if env := os.Getenv(ENV_MACHINE_ID); env != "" {
+		if id, err := strconv.Atoi(env); err == nil {
+			s.machine_id = (uint64(id) & MACHINE_ID_MASK) << 12
+			log.Info("machine id specified:", id)
+		} else {
+			log.Critical(err)
+			os.Exit(-1)
+		}
+	} else {
+		s.init_machine_id()
+	}
 }
 
 func (s *server) init_machine_id() {
