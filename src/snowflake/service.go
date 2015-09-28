@@ -33,11 +33,10 @@ const (
 
 type server struct {
 	machines    []string
-	sn          uint64     // 12-bit serial no
-	machine_id  uint64     // 10-bit machine id
-	last_ts     int64      // last timestamp
-	limiter     chan int32 // limit client
-	client_pool sync.Pool
+	sn          uint64 // 12-bit serial no
+	machine_id  uint64 // 10-bit machine id
+	last_ts     int64  // last timestamp
+	client_pool chan *etcd.Client
 	sync.Mutex
 }
 
@@ -48,11 +47,12 @@ func (s *server) init() {
 		s.machines = strings.Split(env, ";")
 	}
 
-	s.client_pool.New = func() interface{} {
-		return etcd.NewClient(s.machines)
-	}
+	s.client_pool = make(chan *etcd.Client, CLIENT_MAX)
 
-	s.limiter = make(chan int32, CLIENT_MAX)
+	// init client pool
+	for i := 0; i < CLIENT_MAX; i++ {
+		s.client_pool <- etcd.NewClient(s.machines)
+	}
 
 	// check if user specified machine id is set
 	if env := os.Getenv(ENV_MACHINE_ID); env != "" {
@@ -69,85 +69,81 @@ func (s *server) init() {
 }
 
 func (s *server) init_machine_id() {
-	client := s.client_pool.Get().(*etcd.Client)
-	defer func() {
-		s.client_pool.Put(client)
-	}()
 
-	for i := 0; i < RETRY_MAX; i++ {
-		// get the key
-		resp, err := client.Get(UUID_KEY, false, false)
-		if err != nil {
-			log.Critical(err)
-			os.Exit(-1)
+	select {
+	case client := <-s.client_pool:
+		defer func() { s.client_pool <- client }()
+
+		for i := 0; i < RETRY_MAX; i++ {
+			// get the key
+			resp, err := client.Get(UUID_KEY, false, false)
+			if err != nil {
+				log.Critical(err)
+				os.Exit(-1)
+			}
+
+			// get prevValue & prevIndex
+			prevValue, err := strconv.Atoi(resp.Node.Value)
+			if err != nil {
+				log.Critical(err)
+				os.Exit(-1)
+			}
+			prevIndex := resp.Node.ModifiedIndex
+
+			// CAS
+			resp, err = client.CompareAndSwap(UUID_KEY, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
+			if err != nil {
+				log.Error(err)
+				<-time.After(RETRY_DELAY)
+				continue
+			}
+
+			// record serial number of this service, already shifted
+			s.machine_id = (uint64(prevValue+1) & MACHINE_ID_MASK) << 12
+			return
 		}
 
-		// get prevValue & prevIndex
-		prevValue, err := strconv.Atoi(resp.Node.Value)
-		if err != nil {
-			log.Critical(err)
-			os.Exit(-1)
-		}
-		prevIndex := resp.Node.ModifiedIndex
-
-		// CAS
-		resp, err = client.CompareAndSwap(UUID_KEY, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
-		if err != nil {
-			log.Error(err)
-			<-time.After(RETRY_DELAY)
-			continue
-		}
-
-		// record serial number of this service, already shifted
-		s.machine_id = (uint64(prevValue+1) & MACHINE_ID_MASK) << 12
-		return
+		// failed to get machine id, exit
+		os.Exit(-1)
 	}
-
-	// failed to get machine id, exit
-	os.Exit(-1)
 }
 
 // get next value of a key, like auto-increment in mysql
 func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_Value, error) {
 
-	// only CLIENT_MAX next() can be concurrence
-	s.limiter <- 1
-	defer func() {
-		<-s.limiter
-	}()
+	select {
+	case client := <-s.client_pool:
+		defer func() { s.client_pool <- client }()
 
-	client := s.client_pool.Get().(*etcd.Client)
-	defer func() {
-		s.client_pool.Put(client)
-	}()
-	key := PATH + in.Name
+		key := PATH + in.Name
 
-	for i := 0; i < RETRY_MAX; i++ {
-		// get the key
-		resp, err := client.Get(key, false, false)
-		if err != nil {
-			log.Critical(err)
-			return nil, errors.New("Key not exists, need to create first")
+		for i := 0; i < RETRY_MAX; i++ {
+			// get the key
+			resp, err := client.Get(key, false, false)
+			if err != nil {
+				log.Critical(err)
+				return nil, errors.New("Key not exists, need to create first")
+			}
+
+			// get prevValue & prevIndex
+			prevValue, err := strconv.Atoi(resp.Node.Value)
+			if err != nil {
+				log.Critical(err)
+				return nil, errors.New("marlformed value")
+			}
+			prevIndex := resp.Node.ModifiedIndex
+
+			// CAS
+			resp, err = client.CompareAndSwap(key, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
+			if err != nil {
+				log.Error(err)
+				<-time.After(RETRY_DELAY)
+				continue
+			}
+			return &pb.Snowflake_Value{int64(prevValue + 1)}, nil
 		}
-
-		// get prevValue & prevIndex
-		prevValue, err := strconv.Atoi(resp.Node.Value)
-		if err != nil {
-			log.Critical(err)
-			return nil, errors.New("marlformed value")
-		}
-		prevIndex := resp.Node.ModifiedIndex
-
-		// CAS
-		resp, err = client.CompareAndSwap(key, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
-		if err != nil {
-			log.Error(err)
-			<-time.After(RETRY_DELAY)
-			continue
-		}
-		return &pb.Snowflake_Value{int64(prevValue + 1)}, nil
+		return nil, errors.New("etcd server busy")
 	}
-	return nil, errors.New("etcd server busy")
 }
 
 // generate an unique uuid
