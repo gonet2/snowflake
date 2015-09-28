@@ -33,11 +33,10 @@ const (
 
 type server struct {
 	machines    []string
-	sn          uint64     // 12-bit serial no
-	machine_id  uint64     // 10-bit machine id
-	last_ts     int64      // last timestamp
-	limiter     chan int32 // limit client
-	client_pool sync.Pool
+	sn          uint64 // 12-bit serial no
+	machine_id  uint64 // 10-bit machine id
+	last_ts     int64  // last timestamp
+	client_pool chan *etcd.Client
 	sync.Mutex
 }
 
@@ -48,11 +47,12 @@ func (s *server) init() {
 		s.machines = strings.Split(env, ";")
 	}
 
-	s.client_pool.New = func() interface{} {
-		return etcd.NewClient(s.machines)
-	}
+	s.client_pool = make(chan *etcd.Client, CLIENT_MAX)
 
-	s.limiter = make(chan int32, CLIENT_MAX)
+	// init client pool
+	for i := 0; i < CLIENT_MAX; i++ {
+		s.client_pool <- etcd.NewClient(s.machines)
+	}
 
 	// check if user specified machine id is set
 	if env := os.Getenv(ENV_MACHINE_ID); env != "" {
@@ -69,10 +69,8 @@ func (s *server) init() {
 }
 
 func (s *server) init_machine_id() {
-	client := s.client_pool.Get().(*etcd.Client)
-	defer func() {
-		s.client_pool.Put(client)
-	}()
+	client := <-s.client_pool
+	defer func() { s.client_pool <- client }()
 
 	for i := 0; i < RETRY_MAX; i++ {
 		// get the key
@@ -109,17 +107,9 @@ func (s *server) init_machine_id() {
 
 // get next value of a key, like auto-increment in mysql
 func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_Value, error) {
+	client := <-s.client_pool
+	defer func() { s.client_pool <- client }()
 
-	// only CLIENT_MAX next() can be concurrence
-	s.limiter <- 1
-	defer func() {
-		<-s.limiter
-	}()
-
-	client := s.client_pool.Get().(*etcd.Client)
-	defer func() {
-		s.client_pool.Put(client)
-	}()
 	key := PATH + in.Name
 
 	for i := 0; i < RETRY_MAX; i++ {
