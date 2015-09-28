@@ -22,6 +22,7 @@ const (
 	UUID_KEY       = "/seqs/snowflake-uuid"
 	RETRY_MAX      = 10
 	RETRY_DELAY    = 10 * time.Millisecond
+	CLIENT_MAX     = 10
 )
 
 const (
@@ -32,9 +33,10 @@ const (
 
 type server struct {
 	machines    []string
-	sn          uint64 // 12-bit serial no
-	machine_id  uint64 // 10-bit machine id
-	last_ts     int64  // last timestamp
+	sn          uint64     // 12-bit serial no
+	machine_id  uint64     // 10-bit machine id
+	last_ts     int64      // last timestamp
+	limiter     chan int32 // limit client
 	client_pool sync.Pool
 	sync.Mutex
 }
@@ -49,6 +51,8 @@ func (s *server) init() {
 	s.client_pool.New = func() interface{} {
 		return etcd.NewClient(s.machines)
 	}
+
+	s.limiter = make(chan int32, CLIENT_MAX)
 
 	// check if user specified machine id is set
 	if env := os.Getenv(ENV_MACHINE_ID); env != "" {
@@ -105,6 +109,13 @@ func (s *server) init_machine_id() {
 
 // get next value of a key, like auto-increment in mysql
 func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_Value, error) {
+
+	// only CLIENT_MAX next() can be concurrence
+	s.limiter <- 1
+	defer func() {
+		<-s.limiter
+	}()
+
 	client := s.client_pool.Get().(*etcd.Client)
 	defer func() {
 		s.client_pool.Put(client)
