@@ -14,6 +14,8 @@ It has these top-level messages:
 package proto
 
 import proto1 "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 import (
 	context "golang.org/x/net/context"
@@ -21,11 +23,9 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto1.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 type Snowflake struct {
 }
@@ -65,8 +65,9 @@ func (m *Snowflake_UUID) Reset()         { *m = Snowflake_UUID{} }
 func (m *Snowflake_UUID) String() string { return proto1.CompactTextString(m) }
 func (*Snowflake_UUID) ProtoMessage()    {}
 
-func init() {
-}
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
 
 // Client API for SnowflakeService service
 
@@ -112,9 +113,9 @@ func RegisterSnowflakeServiceServer(s *grpc.Server, srv SnowflakeServiceServer) 
 	s.RegisterService(&_SnowflakeService_serviceDesc, srv)
 }
 
-func _SnowflakeService_Next_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _SnowflakeService_Next_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Snowflake_Key)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(SnowflakeServiceServer).Next(ctx, in)
@@ -124,9 +125,9 @@ func _SnowflakeService_Next_Handler(srv interface{}, ctx context.Context, codec 
 	return out, nil
 }
 
-func _SnowflakeService_GetUUID_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _SnowflakeService_GetUUID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Snowflake_NullRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(SnowflakeServiceServer).GetUUID(ctx, in)
