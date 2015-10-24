@@ -16,12 +16,12 @@ import (
 )
 
 const (
-	SERVICE         = "[SNOWFLAKE]"
-	ENV_MACHINE_ID  = "MACHINE_ID" // specific machine id
-	PATH            = "/seqs/"
-	UUID_KEY        = "/seqs/snowflake-uuid"
-	MAX_RETRY_DELAY = 100 // ms
-	CONCURRENT      = 128 // max concurrent connections to etcd
+	SERVICE        = "[SNOWFLAKE]"
+	ENV_MACHINE_ID = "MACHINE_ID" // specific machine id
+	PATH           = "/seqs/"
+	UUID_KEY       = "/seqs/snowflake-uuid"
+	BACKOFF        = 100 // max backoff delay millisecond
+	CONCURRENT     = 128 // max concurrent connections to etcd
 )
 
 const (
@@ -171,7 +171,7 @@ func (s *server) wait_ms(last_ts int64) int64 {
 ////////////////////////////////////////////////////////////////////////////////
 // random delay
 func cas_delay() {
-	<-time.After(time.Duration(rand.Int63n(MAX_RETRY_DELAY)) * time.Millisecond)
+	<-time.After(time.Duration(rand.Int63n(BACKOFF)) * time.Millisecond)
 }
 
 // get timestamp
