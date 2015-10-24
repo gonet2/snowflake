@@ -2,21 +2,20 @@ package main
 
 import (
 	"errors"
+	"etcdclient"
 	"fmt"
-	"github.com/coreos/go-etcd/etcd"
+	etcd "github.com/coreos/etcd/client"
 	log "github.com/gonet2/libs/nsq-logger"
 	"golang.org/x/net/context"
 	"os"
 	pb "proto"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
 
 const (
 	SERVICE        = "[SNOWFLAKE]"
-	DEFAULT_ETCD   = "http://172.17.42.1:2379"
 	ENV_MACHINE_ID = "MACHINE_ID" // specific machine id
 	PATH           = "/seqs/"
 	UUID_KEY       = "/seqs/snowflake-uuid"
@@ -32,26 +31,19 @@ const (
 )
 
 type server struct {
-	machines    []string
 	sn          uint64 // 12-bit serial no
 	machine_id  uint64 // 10-bit machine id
 	last_ts     int64  // last timestamp
-	client_pool chan *etcd.Client
+	client_pool chan etcd.KeysAPI
 	sync.Mutex
 }
 
 func (s *server) init() {
-	// get an unique value for consumer channel of nsq
-	s.machines = []string{DEFAULT_ETCD}
-	if env := os.Getenv("ETCD_HOST"); env != "" {
-		s.machines = strings.Split(env, ";")
-	}
-
-	s.client_pool = make(chan *etcd.Client, CLIENT_MAX)
+	s.client_pool = make(chan etcd.KeysAPI, CLIENT_MAX)
 
 	// init client pool
 	for i := 0; i < CLIENT_MAX; i++ {
-		s.client_pool <- etcd.NewClient(s.machines)
+		s.client_pool <- etcdclient.KeysAPI()
 	}
 
 	// check if user specified machine id is set
@@ -74,7 +66,7 @@ func (s *server) init_machine_id() {
 
 	for i := 0; i < RETRY_MAX; i++ {
 		// get the key
-		resp, err := client.Get(UUID_KEY, false, false)
+		resp, err := client.Get(context.Background(), UUID_KEY, nil)
 		if err != nil {
 			log.Critical(err)
 			os.Exit(-1)
@@ -88,8 +80,8 @@ func (s *server) init_machine_id() {
 		}
 		prevIndex := resp.Node.ModifiedIndex
 
-		// CAS
-		resp, err = client.CompareAndSwap(UUID_KEY, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
+		// CompareAndSwap
+		resp, err = client.Set(context.Background(), UUID_KEY, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevValue: resp.Node.Value, PrevIndex: prevIndex})
 		if err != nil {
 			log.Error(err)
 			<-time.After(RETRY_DELAY)
@@ -114,7 +106,7 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 
 	for i := 0; i < RETRY_MAX; i++ {
 		// get the key
-		resp, err := client.Get(key, false, false)
+		resp, err := client.Get(context.Background(), key, nil)
 		if err != nil {
 			log.Critical(err)
 			return nil, errors.New("Key not exists, need to create first")
@@ -128,8 +120,8 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 		}
 		prevIndex := resp.Node.ModifiedIndex
 
-		// CAS
-		resp, err = client.CompareAndSwap(key, fmt.Sprint(prevValue+1), 0, resp.Node.Value, prevIndex)
+		// CompareAndSwap
+		resp, err = client.Set(context.Background(), key, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevValue: resp.Node.Value, PrevIndex: prevIndex})
 		if err != nil {
 			log.Error(err)
 			<-time.After(RETRY_DELAY)
