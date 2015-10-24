@@ -2,5 +2,5 @@ github.com/bradfitz/http2 HEAD
 github.com/gonet2/libs HEAD
 github.com/golang/glog HEAD
 google.golang.org/grpc HEAD
-github.com/coreos/go-etcd/etcd HEAD
+github.com/coreos/etcd/client HEAD
 github.com/peterbourgon/g2s HEAD
