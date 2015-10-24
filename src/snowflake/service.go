@@ -7,6 +7,7 @@ import (
 	etcd "github.com/coreos/etcd/client"
 	log "github.com/gonet2/libs/nsq-logger"
 	"golang.org/x/net/context"
+	"math/rand"
 	"os"
 	pb "proto"
 	"strconv"
@@ -15,13 +16,12 @@ import (
 )
 
 const (
-	SERVICE        = "[SNOWFLAKE]"
-	ENV_MACHINE_ID = "MACHINE_ID" // specific machine id
-	PATH           = "/seqs/"
-	UUID_KEY       = "/seqs/snowflake-uuid"
-	RETRY_MAX      = 10
-	RETRY_DELAY    = 10 * time.Millisecond
-	CONCURRENT     = 128 // max concurrent connections to etcd
+	SERVICE         = "[SNOWFLAKE]"
+	ENV_MACHINE_ID  = "MACHINE_ID" // specific machine id
+	PATH            = "/seqs/"
+	UUID_KEY        = "/seqs/snowflake-uuid"
+	MAX_RETRY_DELAY = 100 // ms
+	CONCURRENT      = 128 // max concurrent connections to etcd
 )
 
 const (
@@ -64,7 +64,7 @@ func (s *server) init_machine_id() {
 	client := <-s.client_pool
 	defer func() { s.client_pool <- client }()
 
-	for i := 0; i < RETRY_MAX; i++ {
+	for {
 		// get the key
 		resp, err := client.Get(context.Background(), UUID_KEY, nil)
 		if err != nil {
@@ -83,8 +83,7 @@ func (s *server) init_machine_id() {
 		// CompareAndSwap
 		resp, err = client.Set(context.Background(), UUID_KEY, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevIndex: prevIndex})
 		if err != nil {
-			log.Error(err)
-			<-time.After(RETRY_DELAY)
+			cas_delay()
 			continue
 		}
 
@@ -92,19 +91,14 @@ func (s *server) init_machine_id() {
 		s.machine_id = (uint64(prevValue+1) & MACHINE_ID_MASK) << 12
 		return
 	}
-
-	// failed to get machine id, exit
-	os.Exit(-1)
 }
 
 // get next value of a key, like auto-increment in mysql
 func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_Value, error) {
 	client := <-s.client_pool
 	defer func() { s.client_pool <- client }()
-
 	key := PATH + in.Name
-
-	for i := 0; i < RETRY_MAX; i++ {
+	for {
 		// get the key
 		resp, err := client.Get(context.Background(), key, nil)
 		if err != nil {
@@ -123,13 +117,11 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 		// CompareAndSwap
 		resp, err = client.Set(context.Background(), key, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevIndex: prevIndex})
 		if err != nil {
-			log.Error(err)
-			<-time.After(RETRY_DELAY)
+			cas_delay()
 			continue
 		}
 		return &pb.Snowflake_Value{int64(prevValue + 1)}, nil
 	}
-	return nil, errors.New("etcd server busy")
 }
 
 // generate an unique uuid
@@ -138,7 +130,7 @@ func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowfl
 	defer s.Unlock()
 
 	// get a correct serial number
-	t := s.ts()
+	t := ts()
 	if t < s.last_ts { // clock shift backward
 		log.Error("clock shift happened, waiting until the clock moving to the next millisecond.")
 		t = s.wait_ms(s.last_ts)
@@ -169,14 +161,20 @@ func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowfl
 
 // wait_ms will spin wait till next millisecond.
 func (s *server) wait_ms(last_ts int64) int64 {
-	t := s.ts()
+	t := ts()
 	for t <= last_ts {
-		t = s.ts()
+		t = ts()
 	}
 	return t
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// random delay
+func cas_delay() {
+	<-time.After(time.Duration(rand.Int63n(MAX_RETRY_DELAY)) * time.Millisecond)
+}
+
 // get timestamp
-func (s *server) ts() int64 {
+func ts() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }

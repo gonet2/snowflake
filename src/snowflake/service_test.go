@@ -12,6 +12,10 @@ const (
 	test_key = "test_key"
 )
 
+func TestCasDelay(t *testing.T) {
+	cas_delay()
+}
+
 func TestSnowflake(t *testing.T) {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
