@@ -21,7 +21,7 @@ const (
 	UUID_KEY       = "/seqs/snowflake-uuid"
 	RETRY_MAX      = 10
 	RETRY_DELAY    = 10 * time.Millisecond
-	CLIENT_MAX     = 10
+	CONCURRENT     = 128 // max concurrent connections to etcd
 )
 
 const (
@@ -39,10 +39,10 @@ type server struct {
 }
 
 func (s *server) init() {
-	s.client_pool = make(chan etcd.KeysAPI, CLIENT_MAX)
+	s.client_pool = make(chan etcd.KeysAPI, CONCURRENT)
 
 	// init client pool
-	for i := 0; i < CLIENT_MAX; i++ {
+	for i := 0; i < CONCURRENT; i++ {
 		s.client_pool <- etcdclient.KeysAPI()
 	}
 
@@ -81,7 +81,7 @@ func (s *server) init_machine_id() {
 		prevIndex := resp.Node.ModifiedIndex
 
 		// CompareAndSwap
-		resp, err = client.Set(context.Background(), UUID_KEY, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevValue: resp.Node.Value, PrevIndex: prevIndex})
+		resp, err = client.Set(context.Background(), UUID_KEY, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevIndex: prevIndex})
 		if err != nil {
 			log.Error(err)
 			<-time.After(RETRY_DELAY)
@@ -121,7 +121,7 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 		prevIndex := resp.Node.ModifiedIndex
 
 		// CompareAndSwap
-		resp, err = client.Set(context.Background(), key, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevValue: resp.Node.Value, PrevIndex: prevIndex})
+		resp, err = client.Set(context.Background(), key, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevIndex: prevIndex})
 		if err != nil {
 			log.Error(err)
 			<-time.After(RETRY_DELAY)
