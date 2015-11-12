@@ -32,6 +32,7 @@ uuid格式为:
 其他部分参考Dockerfile         
 
 # 使用
+![snowflake](snowflake.gif)
 参考测试用例和snowflake.proto          
 
 # 环境变量
