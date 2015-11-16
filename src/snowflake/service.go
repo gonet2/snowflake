@@ -11,7 +11,6 @@ import (
 	"os"
 	pb "proto"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -20,8 +19,9 @@ const (
 	ENV_MACHINE_ID = "MACHINE_ID" // specific machine id
 	PATH           = "/seqs/"
 	UUID_KEY       = "/seqs/snowflake-uuid"
-	BACKOFF        = 100 // max backoff delay millisecond
-	CONCURRENT     = 128 // max concurrent connections to etcd
+	BACKOFF        = 100  // max backoff delay millisecond
+	CONCURRENT     = 128  // max concurrent connections to etcd
+	UUID_QUEUE     = 1024 // uuid process queue
 )
 
 const (
@@ -31,15 +31,14 @@ const (
 )
 
 type server struct {
-	sn          uint64 // 12-bit serial no
 	machine_id  uint64 // 10-bit machine id
-	last_ts     int64  // last timestamp
 	client_pool chan etcd.KeysAPI
-	sync.Mutex
+	ch_proc     chan chan uint64
 }
 
 func (s *server) init() {
 	s.client_pool = make(chan etcd.KeysAPI, CONCURRENT)
+	s.ch_proc = make(chan chan uint64, UUID_QUEUE)
 
 	// init client pool
 	for i := 0; i < CONCURRENT; i++ {
@@ -58,6 +57,8 @@ func (s *server) init() {
 	} else {
 		s.init_machine_id()
 	}
+
+	go s.uuid_task()
 }
 
 func (s *server) init_machine_id() {
@@ -126,37 +127,45 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 
 // generate an unique uuid
 func (s *server) GetUUID(context.Context, *pb.Snowflake_NullRequest) (*pb.Snowflake_UUID, error) {
-	s.Lock()
-	defer s.Unlock()
+	req := make(chan uint64, 1)
+	s.ch_proc <- req
+	return &pb.Snowflake_UUID{<-req}, nil
+}
 
-	// get a correct serial number
-	t := ts()
-	if t < s.last_ts { // clock shift backward
-		log.Error("clock shift happened, waiting until the clock moving to the next millisecond.")
-		t = s.wait_ms(s.last_ts)
-	}
-
-	if s.last_ts == t { // same millisecond
-		s.sn = (s.sn + 1) & SN_MASK
-		if s.sn == 0 { // serial number overflows, wait until next ms
-			t = s.wait_ms(s.last_ts)
+// uuid generator
+func (s *server) uuid_task() {
+	var sn uint64     // 12-bit serial no
+	var last_ts int64 // last timestamp
+	for {
+		ret := <-s.ch_proc
+		// get a correct serial number
+		t := ts()
+		if t < last_ts { // clock shift backward
+			log.Error("clock shift happened, waiting until the clock moving to the next millisecond.")
+			t = s.wait_ms(last_ts)
 		}
-	} else { // new millsecond, reset serial number to 0
-		s.sn = 0
+
+		if last_ts == t { // same millisecond
+			sn = (sn + 1) & SN_MASK
+			if sn == 0 { // serial number overflows, wait until next ms
+				t = s.wait_ms(last_ts)
+			}
+		} else { // new millsecond, reset serial number to 0
+			sn = 0
+		}
+		// remember last timestamp
+		last_ts = t
+
+		// generate uuid, format:
+		//
+		// 0		0.................0		0..............0	0........0
+		// 1-bit	41bit timestamp			10bit machine-id	12bit sn
+		var uuid uint64
+		uuid |= (uint64(t) & TS_MASK) << 22
+		uuid |= s.machine_id
+		uuid |= sn
+		ret <- uuid
 	}
-	// remember last timestamp
-	s.last_ts = t
-
-	// generate uuid, format:
-	//
-	// 0		0.................0		0..............0	0........0
-	// 1-bit	41bit timestamp			10bit machine-id	12bit sn
-	var uuid uint64
-	uuid |= (uint64(t) & TS_MASK) << 22
-	uuid |= s.machine_id
-	uuid |= s.sn
-
-	return &pb.Snowflake_UUID{uuid}, nil
 }
 
 // wait_ms will spin wait till next millisecond.
