@@ -1,11 +1,4 @@
-<pre>
-                               _____.__          __           
-  ______ ____   ______  _  ___/ ____\  | _____  |  | __ ____  
- /  ___//    \ /  _ \ \/ \/ /\   __\|  | \__  \ |  |/ // __ \ 
- \___ \|   |  (  <_> )     /  |  |  |  |__/ __ \|    <\  ___/ 
-/____  >___|  /\____/ \/\_/   |__|  |____(____  /__|_ \\___  >
-     \/     \/                                \/     \/    \/ 
-</pre>
+# SNOWFLAKE
 [![Build Status](https://travis-ci.org/gonet2/snowflake.svg?branch=master)](https://travis-ci.org/gonet2/snowflake)
 
 # 设计理念
