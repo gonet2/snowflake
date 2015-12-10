@@ -30,40 +30,53 @@ var _ = math.Inf
 type Snowflake struct {
 }
 
-func (m *Snowflake) Reset()         { *m = Snowflake{} }
-func (m *Snowflake) String() string { return proto1.CompactTextString(m) }
-func (*Snowflake) ProtoMessage()    {}
+func (m *Snowflake) Reset()                    { *m = Snowflake{} }
+func (m *Snowflake) String() string            { return proto1.CompactTextString(m) }
+func (*Snowflake) ProtoMessage()               {}
+func (*Snowflake) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 type Snowflake_Key struct {
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 }
 
-func (m *Snowflake_Key) Reset()         { *m = Snowflake_Key{} }
-func (m *Snowflake_Key) String() string { return proto1.CompactTextString(m) }
-func (*Snowflake_Key) ProtoMessage()    {}
+func (m *Snowflake_Key) Reset()                    { *m = Snowflake_Key{} }
+func (m *Snowflake_Key) String() string            { return proto1.CompactTextString(m) }
+func (*Snowflake_Key) ProtoMessage()               {}
+func (*Snowflake_Key) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 0} }
 
 type Snowflake_Value struct {
 	Value int64 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
 }
 
-func (m *Snowflake_Value) Reset()         { *m = Snowflake_Value{} }
-func (m *Snowflake_Value) String() string { return proto1.CompactTextString(m) }
-func (*Snowflake_Value) ProtoMessage()    {}
+func (m *Snowflake_Value) Reset()                    { *m = Snowflake_Value{} }
+func (m *Snowflake_Value) String() string            { return proto1.CompactTextString(m) }
+func (*Snowflake_Value) ProtoMessage()               {}
+func (*Snowflake_Value) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 1} }
 
 type Snowflake_NullRequest struct {
 }
 
-func (m *Snowflake_NullRequest) Reset()         { *m = Snowflake_NullRequest{} }
-func (m *Snowflake_NullRequest) String() string { return proto1.CompactTextString(m) }
-func (*Snowflake_NullRequest) ProtoMessage()    {}
+func (m *Snowflake_NullRequest) Reset()                    { *m = Snowflake_NullRequest{} }
+func (m *Snowflake_NullRequest) String() string            { return proto1.CompactTextString(m) }
+func (*Snowflake_NullRequest) ProtoMessage()               {}
+func (*Snowflake_NullRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 2} }
 
 type Snowflake_UUID struct {
 	Uuid uint64 `protobuf:"varint,1,opt,name=uuid" json:"uuid,omitempty"`
 }
 
-func (m *Snowflake_UUID) Reset()         { *m = Snowflake_UUID{} }
-func (m *Snowflake_UUID) String() string { return proto1.CompactTextString(m) }
-func (*Snowflake_UUID) ProtoMessage()    {}
+func (m *Snowflake_UUID) Reset()                    { *m = Snowflake_UUID{} }
+func (m *Snowflake_UUID) String() string            { return proto1.CompactTextString(m) }
+func (*Snowflake_UUID) ProtoMessage()               {}
+func (*Snowflake_UUID) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 3} }
+
+func init() {
+	proto1.RegisterType((*Snowflake)(nil), "proto.Snowflake")
+	proto1.RegisterType((*Snowflake_Key)(nil), "proto.Snowflake.Key")
+	proto1.RegisterType((*Snowflake_Value)(nil), "proto.Snowflake.Value")
+	proto1.RegisterType((*Snowflake_NullRequest)(nil), "proto.Snowflake.NullRequest")
+	proto1.RegisterType((*Snowflake_UUID)(nil), "proto.Snowflake.UUID")
+}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
@@ -151,4 +164,20 @@ var _SnowflakeService_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{},
+}
+
+var fileDescriptor0 = []byte{
+	// 185 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x2f, 0xce, 0xcb, 0x2f,
+	0x4f, 0xcb, 0x49, 0xcc, 0x4e, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53, 0x4a,
+	0xb1, 0x5c, 0x9c, 0xc1, 0x30, 0x19, 0x29, 0x61, 0x2e, 0x66, 0xef, 0xd4, 0x4a, 0x21, 0x1e, 0x2e,
+	0x96, 0xbc, 0xc4, 0xdc, 0x54, 0x09, 0x46, 0x05, 0x46, 0x0d, 0x4e, 0x29, 0x31, 0x2e, 0xd6, 0xb0,
+	0xc4, 0x9c, 0xd2, 0x54, 0x21, 0x5e, 0x2e, 0xd6, 0x32, 0x10, 0x03, 0x2c, 0xce, 0x2c, 0xc5, 0xcb,
+	0xc5, 0xed, 0x57, 0x9a, 0x93, 0x13, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c, 0x22, 0x25, 0xc2, 0xc5,
+	0x12, 0x1a, 0xea, 0xe9, 0x02, 0xd2, 0x5c, 0x5a, 0x9a, 0x99, 0x02, 0x56, 0xc4, 0x62, 0xd4, 0xc1,
+	0xc8, 0x25, 0x00, 0x37, 0x3f, 0x38, 0xb5, 0xa8, 0x2c, 0x33, 0x39, 0x55, 0xc8, 0x84, 0x8b, 0xc5,
+	0x2f, 0xb5, 0xa2, 0x44, 0x48, 0x04, 0xe2, 0x14, 0x3d, 0xb8, 0x02, 0x3d, 0xa0, 0xed, 0x52, 0x62,
+	0x18, 0xa2, 0x10, 0xeb, 0xed, 0xb8, 0xd8, 0xdd, 0x53, 0x4b, 0xc0, 0x76, 0xc8, 0x60, 0x28, 0x41,
+	0x76, 0x89, 0x28, 0x86, 0x2c, 0x48, 0x53, 0x12, 0x1b, 0x58, 0xd4, 0x18, 0x10, 0x00, 0x00, 0xff,
+	0xff, 0x7b, 0x2f, 0xb3, 0xe6, 0x0a, 0x01, 0x00, 0x00,
 }
