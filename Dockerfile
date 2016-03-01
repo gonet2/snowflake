@@ -1,5 +1,4 @@
-FROM golang:1.5
-MAINTAINER xtaci <daniel820313@gmail.com>
+FROM r.fds.so:5000/golang1.5.3
 ENV GOBIN /go/bin
 COPY . /go
 WORKDIR /go

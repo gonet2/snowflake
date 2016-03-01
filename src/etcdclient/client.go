@@ -2,7 +2,7 @@ package etcdclient
 
 import (
 	etcdclient "github.com/coreos/etcd/client"
-	log "github.com/gonet2/libs/nsq-logger"
+	log "github.com/MISingularity/deepshare2/pkg/log"
 	"os"
 	"strings"
 )
@@ -30,7 +30,7 @@ func init() {
 	// create client
 	c, err := etcdclient.New(cfg)
 	if err != nil {
-		log.Critical(err)
+		log.Fatal("Failed to create etcdclient:", err)
 		return
 	}
 	client = c
