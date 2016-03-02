@@ -2,7 +2,7 @@ package etcdclient
 
 import (
 	etcdclient "github.com/coreos/etcd/client"
-	log "github.com/MISingularity/deepshare2/pkg/log"
+	log "github.com/MISingularity/snowflake/pkg/log"
 	"os"
 	"strings"
 )
