@@ -1,5 +1,5 @@
 github.com/bradfitz/http2 HEAD
-github.com/gonet2/libs HEAD
+github.com/MISingularity/snowflake/pkg/log HEAD
 github.com/golang/glog HEAD
 google.golang.org/grpc HEAD
 github.com/coreos/etcd/client HEAD

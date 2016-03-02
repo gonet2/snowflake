@@ -31,6 +31,5 @@ uuid格式为:
 参考测试用例和snowflake.proto          
 
 # 环境变量
-> NSQD_HOST: eg : http://172.17.42.1:4151          
 > ETCD_HOST: eg: http://172.17.42.1:2379       
 > MACHINE_ID: eg: 123
