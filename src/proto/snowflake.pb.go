@@ -27,6 +27,10 @@ var _ = proto1.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto1.ProtoPackageIsVersion1
+
 type Snowflake struct {
 }
 
@@ -82,6 +86,10 @@ func init() {
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for SnowflakeService service
 
 type SnowflakeServiceClient interface {
@@ -126,28 +134,40 @@ func RegisterSnowflakeServiceServer(s *grpc.Server, srv SnowflakeServiceServer) 
 	s.RegisterService(&_SnowflakeService_serviceDesc, srv)
 }
 
-func _SnowflakeService_Next_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _SnowflakeService_Next_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Snowflake_Key)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(SnowflakeServiceServer).Next(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(SnowflakeServiceServer).Next(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.SnowflakeService/Next",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SnowflakeServiceServer).Next(ctx, req.(*Snowflake_Key))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _SnowflakeService_GetUUID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _SnowflakeService_GetUUID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Snowflake_NullRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(SnowflakeServiceServer).GetUUID(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(SnowflakeServiceServer).GetUUID(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.SnowflakeService/GetUUID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SnowflakeServiceServer).GetUUID(ctx, req.(*Snowflake_NullRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _SnowflakeService_serviceDesc = grpc.ServiceDesc{
