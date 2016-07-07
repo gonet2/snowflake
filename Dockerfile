@@ -1,4 +1,4 @@
-FROM golang:1.5
+FROM golang:latest
 MAINTAINER xtaci <daniel820313@gmail.com>
 ENV GOBIN /go/bin
 COPY . /go
