@@ -1,12 +1,13 @@
 package main
 
 import (
+	"net"
+	"os"
+	pb "snowflake/proto"
+
 	log "github.com/gonet2/libs/nsq-logger"
 	_ "github.com/gonet2/libs/statsd-pprof"
 	"google.golang.org/grpc"
-	"net"
-	"os"
-	pb "proto"
 )
 
 const (

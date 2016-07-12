@@ -2,16 +2,17 @@ package main
 
 import (
 	"errors"
-	"etcdclient"
 	"fmt"
+	"math/rand"
+	"os"
+	"snowflake/etcdclient"
+	pb "snowflake/proto"
+	"strconv"
+	"time"
+
 	etcd "github.com/coreos/etcd/client"
 	log "github.com/gonet2/libs/nsq-logger"
 	"golang.org/x/net/context"
-	"math/rand"
-	"os"
-	pb "proto"
-	"strconv"
-	"time"
 )
 
 const (
