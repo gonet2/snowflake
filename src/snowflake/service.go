@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	etcd "github.com/coreos/etcd/client"
-	log "github.com/gonet2/libs/nsq-logger"
 	"golang.org/x/net/context"
 )
 
@@ -52,7 +52,7 @@ func (s *server) init() {
 			s.machine_id = (uint64(id) & MACHINE_ID_MASK) << 12
 			log.Info("machine id specified:", id)
 		} else {
-			log.Critical(err)
+			log.Panic(err)
 			os.Exit(-1)
 		}
 	} else {
@@ -70,14 +70,14 @@ func (s *server) init_machine_id() {
 		// get the key
 		resp, err := client.Get(context.Background(), UUID_KEY, nil)
 		if err != nil {
-			log.Critical(err)
+			log.Panic(err)
 			os.Exit(-1)
 		}
 
 		// get prevValue & prevIndex
 		prevValue, err := strconv.Atoi(resp.Node.Value)
 		if err != nil {
-			log.Critical(err)
+			log.Panic(err)
 			os.Exit(-1)
 		}
 		prevIndex := resp.Node.ModifiedIndex
@@ -104,14 +104,14 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 		// get the key
 		resp, err := client.Get(context.Background(), key, nil)
 		if err != nil {
-			log.Critical(err)
+			log.Error(err)
 			return nil, errors.New("Key not exists, need to create first")
 		}
 
 		// get prevValue & prevIndex
 		prevValue, err := strconv.Atoi(resp.Node.Value)
 		if err != nil {
-			log.Critical(err)
+			log.Error(err)
 			return nil, errors.New("marlformed value")
 		}
 		prevIndex := resp.Node.ModifiedIndex

@@ -5,7 +5,7 @@ import (
 	"os"
 	pb "snowflake/proto"
 
-	log "github.com/gonet2/libs/nsq-logger"
+	log "github.com/Sirupsen/logrus"
 	_ "github.com/gonet2/libs/statsd-pprof"
 	"google.golang.org/grpc"
 )
@@ -15,11 +15,10 @@ const (
 )
 
 func main() {
-	log.SetPrefix(SERVICE)
 	// 监听
 	lis, err := net.Listen("tcp", _port)
 	if err != nil {
-		log.Critical(err)
+		log.Panic(err)
 		os.Exit(-1)
 	}
 	log.Info("listening on ", lis.Addr())
