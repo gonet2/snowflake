@@ -3,12 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math/rand"
-	"os"
 	"snowflake/etcdclient"
 	pb "snowflake/proto"
 	"strconv"
+	"sync"
 	"time"
+
+	cli "gopkg.in/urfave/cli.v2"
 
 	log "github.com/Sirupsen/logrus"
 	etcd "github.com/coreos/etcd/client"
@@ -16,13 +17,9 @@ import (
 )
 
 const (
-	SERVICE        = "[SNOWFLAKE]"
-	ENV_MACHINE_ID = "MACHINE_ID" // specific machine id
-	PATH           = "/seqs/"
-	UUID_KEY       = "/seqs/snowflake-uuid"
-	BACKOFF        = 100  // max backoff delay millisecond
-	CONCURRENT     = 128  // max concurrent connections to etcd
-	UUID_QUEUE     = 1024 // uuid process queue
+	BACKOFF    = 100  // max backoff delay millisecond
+	CONCURRENT = 128  // max concurrent connections to etcd
+	UUID_QUEUE = 1024 // uuid process queue
 )
 
 const (
@@ -32,74 +29,29 @@ const (
 )
 
 type server struct {
-	machine_id  uint64 // 10-bit machine id
-	client_pool chan etcd.KeysAPI
-	ch_proc     chan chan uint64
+	pkroot     string
+	uuidkey    string
+	machine_id uint64 // 10-bit machine id
+	ch_proc    chan chan uint64
+	muNext     sync.Mutex
 }
 
-func (s *server) init() {
-	s.client_pool = make(chan etcd.KeysAPI, CONCURRENT)
+func (s *server) init(c *cli.Context) {
+	etcdclient.Init(c)
 	s.ch_proc = make(chan chan uint64, UUID_QUEUE)
-
-	// init client pool
-	for i := 0; i < CONCURRENT; i++ {
-		s.client_pool <- etcdclient.KeysAPI()
-	}
-
-	// check if user specified machine id is set
-	if env := os.Getenv(ENV_MACHINE_ID); env != "" {
-		if id, err := strconv.Atoi(env); err == nil {
-			s.machine_id = (uint64(id) & MACHINE_ID_MASK) << 12
-			log.Info("machine id specified:", id)
-		} else {
-			log.Panic(err)
-			os.Exit(-1)
-		}
-	} else {
-		s.init_machine_id()
-	}
-
+	// shifted machine id
+	s.machine_id = (uint64(c.Int("machine-id")) & MACHINE_ID_MASK) << 12
+	s.pkroot = c.String("pk-root")
+	s.uuidkey = c.String("uuid-key")
 	go s.uuid_task()
-}
-
-func (s *server) init_machine_id() {
-	client := <-s.client_pool
-	defer func() { s.client_pool <- client }()
-
-	for {
-		// get the key
-		resp, err := client.Get(context.Background(), UUID_KEY, nil)
-		if err != nil {
-			log.Panic(err)
-			os.Exit(-1)
-		}
-
-		// get prevValue & prevIndex
-		prevValue, err := strconv.Atoi(resp.Node.Value)
-		if err != nil {
-			log.Panic(err)
-			os.Exit(-1)
-		}
-		prevIndex := resp.Node.ModifiedIndex
-
-		// CompareAndSwap
-		resp, err = client.Set(context.Background(), UUID_KEY, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevIndex: prevIndex})
-		if err != nil {
-			cas_delay()
-			continue
-		}
-
-		// record serial number of this service, already shifted
-		s.machine_id = (uint64(prevValue+1) & MACHINE_ID_MASK) << 12
-		return
-	}
 }
 
 // get next value of a key, like auto-increment in mysql
 func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_Value, error) {
-	client := <-s.client_pool
-	defer func() { s.client_pool <- client }()
-	key := PATH + in.Name
+	s.muNext.Lock()
+	defer s.muNext.Unlock()
+	client := etcdclient.KeysAPI()
+	key := s.pkroot + "/" + in.Name
 	for {
 		// get the key
 		resp, err := client.Get(context.Background(), key, nil)
@@ -119,7 +71,7 @@ func (s *server) Next(ctx context.Context, in *pb.Snowflake_Key) (*pb.Snowflake_
 		// CompareAndSwap
 		resp, err = client.Set(context.Background(), key, fmt.Sprint(prevValue+1), &etcd.SetOptions{PrevIndex: prevIndex})
 		if err != nil {
-			cas_delay()
+			log.Warn(err)
 			continue
 		}
 		return &pb.Snowflake_Value{int64(prevValue + 1)}, nil
@@ -142,7 +94,7 @@ func (s *server) uuid_task() {
 		// get a correct serial number
 		t := ts()
 		if t < last_ts { // clock shift backward
-			log.Error("clock shift happened, waiting until the clock moving to the next millisecond.")
+			log.Warn("clock shift happened, waiting until the clock moving to the next millisecond.")
 			t = s.wait_ms(last_ts)
 		}
 
@@ -169,19 +121,14 @@ func (s *server) uuid_task() {
 	}
 }
 
-// wait_ms will spin wait till next millisecond.
+// wait_ms will wait untill last_ts
 func (s *server) wait_ms(last_ts int64) int64 {
 	t := ts()
-	for t <= last_ts {
+	for t < last_ts {
+		time.Sleep(time.Duration(last_ts-t) * time.Millisecond)
 		t = ts()
 	}
 	return t
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// random delay
-func cas_delay() {
-	<-time.After(time.Duration(rand.Int63n(BACKOFF)) * time.Millisecond)
 }
 
 // get timestamp

@@ -1,42 +1,38 @@
 package etcdclient
 
 import (
-	"os"
-	"strings"
+	cli "gopkg.in/urfave/cli.v2"
 
 	log "github.com/Sirupsen/logrus"
 	etcdclient "github.com/coreos/etcd/client"
 )
 
-const (
-	DEFAULT_ETCD = "http://172.17.42.1:2379"
-)
-
-var machines []string
 var client etcdclient.Client
 
-func init() {
-	// etcd client
-	machines = []string{DEFAULT_ETCD}
-	if env := os.Getenv("ETCD_HOST"); env != "" {
-		machines = strings.Split(env, ";")
-	}
-
+func Init(c *cli.Context) {
 	// config
 	cfg := etcdclient.Config{
-		Endpoints: machines,
+		Endpoints: c.StringSlice("etcd-hosts"),
 		Transport: etcdclient.DefaultTransport,
 	}
 
 	// create client
-	c, err := etcdclient.New(cfg)
+	etcdcli, err := etcdclient.New(cfg)
 	if err != nil {
-		log.Error(err)
+		log.Panic(err)
 		return
 	}
-	client = c
+	client = etcdcli
 }
 
 func KeysAPI() etcdclient.KeysAPI {
 	return etcdclient.NewKeysAPI(client)
+}
+
+func NewOptions() etcdclient.GetOptions {
+	return etcdclient.GetOptions{}
+}
+
+func NewWatcherOptions(recursive bool) *etcdclient.WatcherOptions {
+	return &etcdclient.WatcherOptions{Recursive: recursive}
 }

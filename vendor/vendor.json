@@ -33,22 +33,14 @@
 			"revisionTime": "2016-06-29T21:10:53Z"
 		},
 		{
-			"checksumSHA1": "C8c4QZJS099ZNBIQsrLMFHkNjxk=",
-			"path": "github.com/gonet2/libs/statsd-pprof",
-			"revision": "1b61d919b824e1fd54a32e370058cf43ba82469d",
-			"revisionTime": "2016-07-12T15:56:50Z"
-		},
-		{
-			"checksumSHA1": "98pC93jy7+oik3tlde3hVAoh3SE=",
-			"path": "github.com/peterbourgon/g2s",
-			"revision": "ec76db4c1ac16400ac0e17ca9c4840e1d23da5dc",
-			"revisionTime": "2014-09-25T15:41:42Z"
-		},
-		{
 			"checksumSHA1": "UADS3X1kxl+/qqeGcmTo0rBiXlQ=",
 			"path": "github.com/ugorji/go/codec",
 			"revision": "b94837a2404ab90efe9289e77a70694c355739cb",
 			"revisionTime": "2016-05-31T12:29:44Z"
+		},
+		{
+			"path": "github.com/urfave/cli.v2",
+			"revision": ""
 		},
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
@@ -163,6 +155,12 @@
 			"revisionTime": "2016-08-19T18:23:41Z",
 			"version": "=v1.0.1-GA",
 			"versionExact": "v1.0.1-GA"
+		},
+		{
+			"checksumSHA1": "6DsBvq9uYf/UaCAUrUBbgpHFYRg=",
+			"path": "gopkg.in/urfave/cli.v2",
+			"revision": "922e3e2ceaaa1831c859679af772dcd534095119",
+			"revisionTime": "2017-04-18T05:23:20Z"
 		},
 		{
 			"path": "proto",

@@ -1,11 +1,10 @@
 package main
 
 import (
-	pb "snowflake/proto"
-	"testing"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	pb "proto"
+	"testing"
 )
 
 const (
