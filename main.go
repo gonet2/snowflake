@@ -35,6 +35,12 @@ func main() {
 				Value: 0,
 				Usage: "snowflake machine id, 0-1023",
 			},
+			&cli.IntFlag{
+				Name:    "incr-step",
+				Value:   1,
+				Usage:   "auto increment step for cache",
+				EnvVars: []string{"INCR_STEP"},
+			},
 			&cli.StringFlag{
 				Name:  "pk-root",
 				Value: "/seqs",
@@ -52,6 +58,7 @@ func main() {
 			log.Println("machine-id:", c.Int("machine-id"))
 			log.Println("pk-root:", c.String("pk-root"))
 			log.Println("uuid-key:", c.String("uuid-key"))
+			log.Println("incr-step:", c.Int("incr-step"))
 			// 监听
 			lis, err := net.Listen("tcp", c.String("listen"))
 			if err != nil {
